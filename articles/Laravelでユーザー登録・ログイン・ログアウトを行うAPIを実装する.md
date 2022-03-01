@@ -78,6 +78,8 @@ fillからのsaveを行う箇所は、後でRepositoryクラスでも作って�
 ここまでのテストコードはこんな感じで。
 
 ```php
+    private array $user_param;
+    
     public function setUp() :void
     {
         parent::setUp();
@@ -121,3 +123,9 @@ fillからのsaveを行う箇所は、後でRepositoryクラスでも作って�
         ];
     }
 ```
+
+## ログイン・ログアウト
+
+これ、Sanctumで独自ログインにするか、Google等のソーシャルログインにするか一考の余地がありますね。Google認証のほうがセキュリティ的にこちらが負うべき責任が減るのでうれしいのですが、どこの馬の骨かわからんやつのサービスなんかに大切なGoogleIDを渡してたまるかい、という人情もあるわけで。
+
+ここはおとなしくSanctumにしておきますかね。
