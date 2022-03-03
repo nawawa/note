@@ -173,7 +173,7 @@ class UserCollection extends ResourceCollection
 - 返却するモデルが複数種類（リレーション元・リレーション先をまとめて返却するなど）▶︎ リソースコレクション
 
 `mergeWhen`など、条件によってプロパティを入れたり入れなかったりできるメソッドも実装されています。
-詳しくはReadouble.comを御覧ください。
+詳しくは[Readouble.com](https://readouble.com/laravel/8.x/ja/eloquent-resources.html)を御覧ください。
 
 また今回の内容はあくまで正常系のレスポンスのみを考慮しており、エラー発生時のレスポンスなどは別途例外処理にてアレコレする必要があるかと思います。
 筆者にエラーハンドリング周りの知識が足りていないので、そのへんは別途記事を書くか、こちらに後日加筆いたします。
