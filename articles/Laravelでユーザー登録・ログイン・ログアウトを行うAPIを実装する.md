@@ -357,6 +357,8 @@ Laravelはこれがないとリクエスト元がAPIクライアントである�
 
 筆者自身は別リポジトリで、Laravelアプリケーションからは完全に分離したSPAを構築しようと考えてますので、そこでどのようになるかは着手してから検証しようと思います。
 
+---
+
 https://wonwon-eater.com/laravel-sanctum-postman/
 
 https://qiita.com/ucan-lab/items/3e7045e49658763a9566
