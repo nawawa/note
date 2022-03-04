@@ -3,6 +3,8 @@
 
 フロントエンド側はSPAを想定しており、認証にはSanctumを用いますが、トークンではなくセッションによる認証を行いますので、普通にLaravel側で実装されてる認証機能を使うのとほとんど変わりありません。ただログアウト処理に関しては。SPA側でセッションを削除する処理を実装する形にしようと考えているので、Laravel側ではなにもしません。今回はフロント側の実装には触れませんので、今後フロントエンド領域のタスクに手を出した際に別途記事を書く予定です。
 
+なお、内容のほとんどは[[@ucan-lab](https://qiita.com/ucan-lab)様の「Laravel Sanctum でSPA(クッキー)認証する」という記事](https://qiita.com/ucan-lab/items/3e7045e49658763a9566)の受け売りとなっておりますが、筆者がLaravelにてすでに書いているソースとの兼ね合いや、Postmanでの動作確認までを踏まえたやや簡易な内容にしようと思ってます。
+
 ## ユーザー登録
 
 新規登録に関しては、単にUserが一人増えるだけなので、普通にCRUDでいうCを行えばいいのですが。
@@ -31,7 +33,7 @@
 ```
 ### デフォルトのユーザーアイコンを用意する
 
-任意のユーザーアイコンを設定できるが、特に必須でもないという仕様にしたかったので、入力値にアイコンの指定がなかったら`/storage/app/public/images`に配置してあるデフォルトアイコンを使用するようにしました。
+任意のユーザーアイコンを設定できるが特に必須でもない、という仕様にしたかったので、入力値にアイコンの指定がなかった場合は`/storage/app/public/images`に配置してあるデフォルトアイコンを使用するようにしました。
 
 アイコンのパスは`App`配下に`Consts`ディレクトリを作成し、その中に定数クラスを作成して管理しています。
 
@@ -39,7 +41,7 @@
 
 ここをどうするかはサービス設計次第なんでしょうけど。
 
-認証周りを厳格に行いたい場合は一回ログインページにリダイレクトさせるのがいいと思うのですが、今回に関しては可能な限りゆるふわな作りにしたかったので、登録即認証って感じにしようかなと。
+認証周りを厳格に行いたい場合は一回ログインページにリダイレクトさせるのがいいと思うのですが、今回に関しては登録が完了したらすぐに使い始められるようにしようと思ったので、こんなふうにしました。
 
 ```php
   /**
@@ -59,13 +61,7 @@
       'icon_path' => ($input['icon_path']) ? $input['icon_path']: DefaultUserIcon::PATH,
     ]);
     $user->save();
-
-    try {
-      Auth::login($user, $remember = true);
-    } catch (Throwable $e) {
-      report($e);
-      return false;
-    }
+    Auth::login($user, $remember = true);
 
     return $user;
   }
@@ -133,6 +129,12 @@ AuthファサードのloginメソッドにUserモデルのオブジェクトを�
 Sanctumを使います。
 
 ```php
+    'paths' => ['api/*', 'login', 'sanctum/csrf-cookie'],
+```
+
+今回は（慣習上？）`web.php`にログイン処理のエンドポイントを書いており、`config\cors.php`のこの部分に、`login`を追加します。
+
+```php
     /**
      * ログイン
      *
@@ -149,12 +151,13 @@ Sanctumを使います。
     }
 
 		/**
-     * ログイン中ユーザー取得
+     * ログインしたユーザーを取得
      *
      * @return User
      */
     public function get_auth_user(): User
     {
+        $this->request->session()->regenerate();
         return Auth::user();
     }
 ```
@@ -219,10 +222,140 @@ Authファサードの`attempt`メソッドへ渡す引数は、第一引数が�
             'remember' => true,
         ]);
         $response->assertStatus(403);
+        $this->assertGuest($guard = null);
     }
 ```
 
+テストコードは、最低限ですがこんな感じ。パスワードは、適当に生成して`Factory`に書いているものです。
 
+二番目の以上系テストで書いている一行目・二行目は、それぞれ「例外処理を行わない」宣言と「例外発生時のエラーメッセージが引数に渡したものであること」をチェックするものです。これを書かないとただ単に自分で設定した例外がスローされてテストが止まってしまうので、意図的に例外を発生させるテストをする際には必要です。
+
+## 動作確認
+
+ここまでの内容は、単にSanctumをインストールして（最初から入ってたので筆者はやらなかったですが）、ログイン処理とテストを書いただけでできる内容です。
+
+こうして実装したログイン処理の動作確認を外部から行うためには、いくつか設定を追加する必要があります。
+今回はPostmanを使用して、「ログイン」と「認証ガード付きルートへのアクセス」を検証してみようと思います。
+
+SeederでもTinkerでもいいので、とりあえずユーザーを一人追加しておきましょう。
+
+```
+Psy Shell v0.10.12 (PHP 8.1.0 — cli) by Justin Hileman
+>>> $user = new User;
+[!] Aliasing 'User' to 'App\Models\User' for this Tinker session.
+=> App\Models\User {#3636}
+>>> $user->create(['login_id' => 'yuduki_yukari', 'password' => Hash::make('yukarisan_saiko'), 'name' => 'yuduki',  'icon_name' => DefaultUserIcon::NAME, 'icon_path' => DefaultUserIcon::PATH]);
+=> App\Models\User {#4451
+     login_id: "yuduki_yukari",
+     #password: "$2y$10$266CRguI.vov/ec5S6m0.e.h80m2cRzuXfiE5L9oLPqDHc/5zPyh6",
+     name: "yuduki",
+     icon_name: "default_icon.png",
+     icon_path: "storage/default_icon.jpg",
+     updated_at: "2022-03-04 13:31:24",
+     created_at: "2022-03-04 13:31:24",
+     id: 3,
+   }
+>>> 
+```
+
+### 設定をいろいろ追加
+
+Laravel側の設定から。`.env`にて項目を変更・追加します。
+
+```
+SESSION_DRIVER=cookie
+
+SANCTUM_STATEFUL_DOMAINS=localhost:ポート番号,localhost
+```
+
+`SESSION_DRIVER`を`file`から`cookie`へ変更するほか、`SANCTUM_STATEFUL_DOMAINS`を追加して`localhost:ポート番号` と `localhost`からのアクセスを許可します。
+
+あとは`config/cors.php`もいじっておきます。今回は`web.php`にログイン処理へのルートを記述したので、そのパスを追加します。
+
+```php
+'paths' => ['api/*', 'login', 'sanctum/csrf-cookie'],
+```
+
+### Postman内に環境変数を設定
+
+Postman右上の目のようなアイコンを押して、新しくEnviromentを追加。
+そしたらこんな感じで`localhost:ポート番号`を`APP_URL`として定義しておきまして、
+
+## ![スクリーンショット 2022-03-04 15.17.22](/Users/nawaryoga/Library/Application Support/typora-user-images/スクリーンショット 2022-03-04 15.17.22.png)
+
+Postmanで追加したログインAPIの画面で、このようなスクリプトを入力。
+
+```JavaScript
+let csrfRequestUrl = pm.environment.get('APP_URL') + '/sanctum/csrf-cookie';
+pm.sendRequest(csrfRequestUrl, function(err, res, {cookies}) {
+    let xsrfCookie = cookies.one('XSRF-TOKEN');
+    if (xsrfCookie) {
+        let xsrfToken = decodeURIComponent(xsrfCookie['value']);
+        pm.request.headers.upsert({
+            key: 'X-XSRF-TOKEN',
+            value: xsrfToken,
+        });                
+        pm.environment.set('XSRF-TOKEN', xsrfToken);
+    }
+});
+```
+
+![スクリーンショット 2022-03-04 15.40.57](/Users/nawaryoga/Desktop/スクリーンショット 2022-03-04 15.40.57.png)
+
+これが、例えばVue.jsでAxiosなどを使った際に、Axios側で勝手に行ってもらえる処理だそうです。
+
+一行目は、環境変数を取り出して`http:/localhost:ポート番号/sanctum/csrf-cookie`というエンドポイントへのURLを生成してます。
+二行目ではそのURLへリクエストを送信し、`get`以外のメソッドでエンドポイントへリクエストを送信する場合に必ず含めなければならない`XSRF-TOKEN`の値を取得したあと、そのトークンを環境変数へぶち込んで`envioment`全体で共有できるようにしています。
+
+本来はトークンが変わる度に手動でヘッダのトークンを書き換えなければなりませんが、このスクリプトはその作業を自動化してくれるわけですね。筆者もモバイルトークンを必要とするAPIをLaravelで構築し、Postmanから動作確認していたことがあるので、そのめんどくささは体験したことがあります。その手作業を省けるのは助かります。
+
+そんな感じでヘッダを整えて、最終的にこの状態にします。
+
+![スクリーンショット 2022-03-04 15.42.11](/Users/nawaryoga/Library/Application Support/typora-user-images/スクリーンショット 2022-03-04 15.42.11.png)
+
+あとは`Body`にJsonを入力。
+筆者の場合は、`login_id` `password` `remember`の3つの要素を持つ配列を期待するようにコントローラーにて処理を記述したので、配列はこのようになります。
+
+```json
+{
+    "login_id": "yuduki_yukari",
+    "password": "yukarisan_saiko",
+    "remember": true
+}
+```
+
+そうして状態を整え、リクエストを送信。
+
+![スクリーンショット 2022-03-04 15.46.49](/Users/nawaryoga/Library/Application Support/typora-user-images/スクリーンショット 2022-03-04 15.46.49.png)
+
+ステータス200でちゃんと帰ってきました。
+`UserResource`で整形した通りにログインしたユーザーの情報が返ってきています。
+
+ログインできたので、ログインしていないとアクセスできないルートにもリクエストしてみましょう。
+ユーザー情報を取得するAPIである`localhost:8080/api/user/3`にアクセスすると、ちゃんとIDが3である`yuduki`さんが取得できました。
+
+![スクリーンショット 2022-03-04 16.12.38](/Users/nawaryoga/Library/Application Support/typora-user-images/スクリーンショット 2022-03-04 16.12.38.png)
+
+このAPIはGETメソッドでリクエストしますが、その場合は`Origin`に`APP_URL`環境変数を入れる必要があります。
+
+### 出がちなエラー
+
+```
+Symfony\Component\Routing\Exception\RouteNotFoundException: Route [login] not defined. in file /var/www/html/vendor/laravel/framework/src/Illuminate/Routing/UrlGenerator.php on line 444
+```
+
+動作確認をしていて`login`なんていうルートはないぜ！というエラーが出る場合、ヘッダに`Accept` `application/json`を入れ忘れています。
+
+Laravelはこれがないとリクエスト元がAPIクライアントであることを理解してくれないので、「誰だこいつは？ログインさせな！」と、ログインページへリダイレクトさせようとします。でも今回はログインページを作っていないので、無いページへアクセスしようとしてエラーになるということになります。
+
+## まとめ
+
+- ログイン処理は`Attempt`に配列と真偽値を渡すだけ。
+- ログアウトはサーバーサイドでもできるけど、フロント側でセッションを破棄すればいいだけなので実装しなくていい場合もある
+
+デプロイした後は`.env`にSPAのドメインを入力する必要があったりもするのですが、設定ファイルをどうするかはSPA側がどのように運用されるか（別ドメインか、Laravel内蔵か、サブドメインか）で変わってくる部分もあるようです。まだフロントエンドには手を付けてない（全然考えてない）ので、実際のSPAで運用しようとした際にどんな設定が足りてないかは、現時点ではわからない状態です。
+
+筆者自身は別リポジトリで、Laravelアプリケーションからは完全に分離したSPAを構築しようと考えてますので、そこでどのようになるかは着手してから検証しようと思います。
 
 
 
