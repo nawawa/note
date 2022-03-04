@@ -357,6 +357,20 @@ Laravelはこれがないとリクエスト元がAPIクライアントである�
 
 筆者自身は別リポジトリで、Laravelアプリケーションからは完全に分離したSPAを構築しようと考えてますので、そこでどのようになるかは着手してから検証しようと思います。
 
+https://wonwon-eater.com/laravel-sanctum-postman/
+
+https://qiita.com/ucan-lab/items/3e7045e49658763a9566
+
+https://zenn.dev/msksgm/articles/20211126-laravle-route-login-not-defined
+
+https://readouble.com/laravel/8.x/ja/http-tests.html
+
+https://readouble.com/laravel/8.x/ja/sanctum.html
+
+https://readouble.com/laravel/8.x/ja/authentication.html
+
+
+
 
 
 
