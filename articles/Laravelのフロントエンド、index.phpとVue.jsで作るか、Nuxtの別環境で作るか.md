@@ -1,8 +1,6 @@
-ポートフォリオを作ってる最中の筆者目線の話です。
+いま作っているポートフォリオのデプロイ先について検討するセルフブレスト記事、というのが大まかな概要ですが、もし求職活動中だけデプロイしておきたいだけなら、さっさとVue.jsで作ってEC2にでもなんにでもデプロイすればいいと思います。
 
-バックエンドフレームワークを完全にJson入出力窓口にした場合、フレームワーク内部で持ってるindex.html上でSPAを構築するか、フレームワークとはベつに本番環境を用意してSPAをホスティングするか、ちょっと悩みます。
-
-セルフブレスト的に書きながら検討しようと思います。（Vue.jsないしNuxtで作る前提です）
+ただ自分の場合は、個人開発アプリケーションとして継続的に運用することを視野に入れてまして、その際Laravel内部で持ってるindex.php上でSPA（Vue.js）を構築するか、APIサーバーとは別に本番環境を用意してSSRなりSSGなりするか（Nuxt.js）、ちょっと悩みます。それについて考える記事です。
 
 ## TL;DR
 
@@ -75,12 +73,20 @@ Netlifyは日本のCDNがないので速度が出ないという話もありま�
 
 ## いろいろ参考リンク
 
-各レンダリング形式の比較：https://nishimura.club/nuxt-spa-ssr-ssg
+▼各レンダリング形式の比較：
 
-AWS LambdaでExpressを動かし、そのミドルウェアとしてNuxt.jsを稼働させる手法：https://mya-ake.com/posts/nuxtjs-on-aws-lambda/
+https://nishimura.club/nuxt-spa-ssr-ssg
 
-FirebaseにSSRモードでデプロイする手順：https://zenn.dev/sengosha/articles/de4c3bb6ffbe3be2b3c2
+▼AWS LambdaでExpressを動かし、そのミドルウェアとしてNuxt.jsを稼働させる手法：
 
-Nuxt.jsを採用したnoteの事例：https://www.youtube.com/watch?v=yDaZFK5jbo8&list=FLVpGw83_TR2s8P3kiEqmnkA&index=32
-（とはいえこれは過去の話で、現在はnoteでもNext.jsへガンガン移行しています。初心者の入り口としてはとても参考になる）
+https://mya-ake.com/posts/nuxtjs-on-aws-lambda/
 
+▼FirebaseにSSRモードでデプロイする手順：
+
+https://zenn.dev/sengosha/articles/de4c3bb6ffbe3be2b3c2
+
+▼AngularからNuxt.jsへ移行したnoteの事例：
+
+https://www.youtube.com/watch?v=yDaZFK5jbo8&list=FLVpGw83_TR2s8P3kiEqmnkA&index=32
+
+（とはいえこれは過去の話で、現在はnoteでもNext.jsへガンガン移行しています。初心者が見るものとしてはとても参考になります）
